@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FinMate - Thiết lập ngân sách</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Be Vietnam Pro', sans-serif; }
+    .glass { backdrop-filter: blur(14px); background: rgba(255,255,255,0.85); }
+    .input-field { width: 100%; border-radius: 14px; border: 1.5px solid #e2e8f0; padding: 14px 18px; font-size: 15px; font-family: 'Be Vietnam Pro', sans-serif; outline: none; transition: border-color 0.2s; background: white; }
+    .input-field:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.12); }
+    .btn-primary { background: linear-gradient(135deg, #059669, #047857); color: white; border: none; border-radius: 14px; padding: 15px; font-size: 16px; font-weight: 700; cursor: pointer; width: 100%; font-family: 'Be Vietnam Pro', sans-serif; transition: transform 0.2s, box-shadow 0.2s; }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 25px rgba(5,150,105,0.3); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .toast { position: fixed; top: 24px; right: 24px; z-index: 9999; padding: 14px 20px; border-radius: 14px; font-weight: 600; font-size: 14px; transform: translateX(120%); transition: transform 0.3s; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+    .toast.show { transform: translateX(0); }
+    .toast.success { background: #d1fae5; color: #065f46; border-left: 4px solid #10b981; }
+    .toast.error { background: #fee2e2; color: #991b1b; border-left: 4px solid #ef4444; }
+    .category-chip { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 12px; border: 1.5px solid #e2e8f0; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s; background: white; }
+    .category-chip.selected { border-color: #10b981; background: #d1fae5; color: #065f46; }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-100 flex items-center justify-center p-6">
+
+<div id="toast" class="toast"></div>
+
+<div class="w-full max-w-2xl">
+  <div class="glass rounded-[36px] border border-white shadow-2xl p-8 lg:p-12">
+
+    <div class="text-center mb-10">
+      <div class="w-20 h-20 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-4xl mx-auto shadow-lg">💰</div>
+      <h2 class="text-4xl font-black text-slate-800 mt-6">Thiết lập ngân sách</h2>
+      <p class="text-slate-500 mt-3 text-base" id="wsNameDisplay">Workspace của bạn</p>
+    </div>
+
+    <div class="space-y-6">
+      <!-- Total budget -->
+      <div>
+        <label class="block text-sm font-bold text-slate-700 mb-2">Tổng ngân sách dự kiến (VNĐ)</label>
+        <input id="totalBudget" type="number" placeholder="Ví dụ: 10000000" class="input-field" />
+        <p class="text-slate-400 text-xs mt-2">Đây là ngân sách tổng cho workspace. Bạn có thể thay đổi sau.</p>
+      </div>
+
+      <!-- Budget period -->
+      <div>
+        <label class="block text-sm font-bold text-slate-700 mb-2">Kỳ ngân sách</label>
+        <select id="budgetPeriod" class="input-field">
+          <option value="monthly">Hàng tháng</option>
+          <option value="quarterly">Hàng quý</option>
+          <option value="yearly">Hàng năm</option>
+          <option value="custom">Tùy chỉnh</option>
+        </select>
+      </div>
+
+      <!-- Expense categories -->
+      <div>
+        <label class="block text-sm font-bold text-slate-700 mb-3">Danh mục chi tiêu (chọn nhiều)</label>
+        <div class="flex flex-wrap gap-3" id="categoryList">
+          <button type="button" class="category-chip selected" data-cat="Ăn uống">🍜 Ăn uống</button>
+          <button type="button" class="category-chip selected" data-cat="Marketing">📢 Marketing</button>
+          <button type="button" class="category-chip selected" data-cat="Vật tư">📦 Vật tư</button>
+          <button type="button" class="category-chip" data-cat="Team Building">🎉 Team Building</button>
+          <button type="button" class="category-chip" data-cat="Thiết bị">💻 Thiết bị</button>
+          <button type="button" class="category-chip" data-cat="Vận chuyển">🚗 Vận chuyển</button>
+          <button type="button" class="category-chip" data-cat="Phần mềm">⚙️ Phần mềm</button>
+          <button type="button" class="category-chip" data-cat="Khác">💡 Khác</button>
+        </div>
+      </div>
+
+      <!-- Warning threshold -->
+      <div>
+        <label class="block text-sm font-bold text-slate-700 mb-2">Ngưỡng cảnh báo vượt ngân sách</label>
+        <div class="flex gap-3 items-center">
+          <input id="warnThreshold" type="range" min="50" max="95" value="80" class="flex-1 accent-emerald-500"
+            oninput="document.getElementById('thresholdVal').textContent = this.value + '%'" />
+          <span id="thresholdVal" class="text-emerald-600 font-bold text-lg w-14 text-right">80%</span>
+        </div>
+        <p class="text-slate-400 text-xs mt-2">AI sẽ cảnh báo khi chi tiêu vượt ngưỡng này.</p>
+      </div>
+
+      <button onclick="saveBudget()" id="saveBtn" class="btn-primary">Lưu & Đi đến Dashboard →</button>
+
+      <div class="text-center">
+        <a href="dashboard.html" class="text-slate-400 text-sm hover:text-slate-600">Bỏ qua, thiết lập sau</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+ const firebaseConfig = {
+  apiKey: "AIzaSyA81clB1PVQ2xxvjwqIVf8nCM_g4P76N-g",
+  authDomain: "finmate-trolytaichinh.firebaseapp.com",
+  projectId: "finmate-trolytaichinh",
+  storageBucket: "finmate-trolytaichinh.firebasestorage.app",
+  messagingSenderId: "54653241549",
+  appId: "1:54653241549:web:e62a60ad34c1e53326c184",
+  measurementId: "G-VMPRFZVF6C"
+};
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast ${type} show`;
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  onAuthStateChanged(auth, (user) => {
+    if (!user) { window.location.href = 'finmate.html'; return; }
+    const wsName = localStorage.getItem('finmate_currentWsName') || 'Workspace của bạn';
+    document.getElementById('wsNameDisplay').textContent = '📂 ' + wsName;
+  });
+
+  // Category chip toggle
+  document.querySelectorAll('.category-chip').forEach(chip => {
+    chip.addEventListener('click', () => chip.classList.toggle('selected'));
+  });
+
+  window.saveBudget = async function() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const wsId = localStorage.getItem('finmate_currentWs');
+    if (!wsId) { showToast('Không tìm thấy workspace.', 'error'); return; }
+
+    const budget = parseFloat(document.getElementById('totalBudget').value) || 0;
+    const period = document.getElementById('budgetPeriod').value;
+    const threshold = parseInt(document.getElementById('warnThreshold').value);
+    const categories = Array.from(document.querySelectorAll('.category-chip.selected')).map(c => c.dataset.cat);
+
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Đang lưu...';
+
+    try {
+      await updateDoc(doc(db, 'workspaces', wsId), { budget, budgetPeriod: period, warnThreshold: threshold, categories });
+      await setDoc(doc(db, 'budgets', wsId), {
+        workspaceId: wsId,
+        total: budget,
+        period,
+        warnThreshold: threshold,
+        categories,
+        updatedAt: new Date().toISOString()
+      });
+      showToast('Đã lưu ngân sách! 🎉');
+      setTimeout(() => window.location.href = 'dashboard.html', 1000);
+    } catch (err) {
+      showToast('Lỗi: ' + err.message, 'error');
+      btn.disabled = false; btn.innerHTML = 'Lưu & Đi đến Dashboard →';
+    }
+  };
+</script>
+</body>
+</html>
