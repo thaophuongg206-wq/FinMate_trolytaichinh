@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FinMate - Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="dashboard.css">
+  <style>
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .toast { position: fixed; top: 20px; right: 20px; z-index: 9999; padding: 12px 18px; border-radius: 14px; font-weight: 600; font-size: 14px; font-family: 'Be Vietnam Pro', sans-serif; transform: translateX(120%); transition: transform 0.3s; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+    .toast.show { transform: translateX(0); }
+    .toast.success { background: #d1fae5; color: #065f46; }
+    .toast.error { background: #fee2e2; color: #991b1b; }
+    #loadingOverlay { position: fixed; inset: 0; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; font-family: 'Be Vietnam Pro', sans-serif; font-size: 18px; font-weight: 700; color: #059669; }
+    .income-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:500; align-items:center; justify-content:center; }
+    .income-modal.open { display:flex; }
+    .modal-card { background:white; border-radius:28px; padding:36px; width:90%; max-width:480px; }
+    .modal-input { width:100%; border:1.5px solid #e2e8f0; border-radius:12px; padding:12px 16px; font-size:15px; font-family:'Be Vietnam Pro',sans-serif; outline:none; transition:border-color 0.2s; }
+    .modal-input:focus { border-color:#10b981; }
+    .btn-green { background:linear-gradient(135deg,#059669,#047857); color:white; border:none; border-radius:12px; padding:13px 20px; font-weight:700; font-size:15px; cursor:pointer; font-family:'Be Vietnam Pro',sans-serif; transition:transform 0.2s; }
+    .btn-green:hover { transform:translateY(-1px); }
+    .btn-green:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
+  </style>
+</head>
+<body>
+
+<div id="loadingOverlay">⏳ Đang tải dữ liệu...</div>
+<div id="toast" class="toast"></div>
+
+<!-- ADD INCOME MODAL -->
+<div id="incomeModal" class="income-modal">
+  <div class="modal-card">
+    <div class="flex items-center justify-between mb-6">
+      <h3 style="font-size:22px;font-weight:800;color:#1d2939;">💰 Thêm khoản thu</h3>
+      <button onclick="closeIncomeModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#94a3b8;">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <input id="inc-amount" type="number" placeholder="Số tiền (VNĐ)" class="modal-input" />
+      <input id="inc-source" type="text" placeholder="Nguồn thu (VD: Đóng quỹ tháng 3)" class="modal-input" />
+      <input id="inc-note" type="text" placeholder="Ghi chú (tuỳ chọn)" class="modal-input" />
+      <input id="inc-date" type="date" class="modal-input" />
+      <button onclick="saveIncome()" id="saveIncBtn" class="btn-green">Lưu khoản thu</button>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="hidden lg:flex w-72 bg-gradient-to-b from-emerald-700 via-green-600 to-teal-600 text-white flex-col p-7 relative overflow-hidden" style="position:fixed;height:100vh;z-index:50;">
+    <div class="absolute w-72 h-72 rounded-full bg-white/10 -top-16 -left-16 pointer-events-none"></div>
+    <div class="absolute w-64 h-64 rounded-full bg-white/10 bottom-0 right-0 pointer-events-none"></div>
+    <div class="relative z-10 flex flex-col h-full">
+      <div class="flex items-center gap-3 mb-12">
+        <div class="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center text-2xl shadow-lg">💸</div>
+        <div>
+          <h1 class="text-2xl font-black">FinMate</h1>
+          <p class="text-emerald-100 text-xs">Dashboard tài chính AI</p>
+        </div>
+      </div>
+      <nav class="space-y-2 flex-1">
+        <a href="dashboard.html" class="menu-link">
+          <div class="w-full bg-white text-emerald-700 rounded-2xl px-4 py-3 flex items-center gap-3 shadow-xl font-bold">
+            <span class="text-xl">📊</span><span>Dashboard</span>
+          </div>
+        </a>
+        <a href="flow2.html" class="menu-link">
+          <div class="w-full bg-white/10 hover:bg-white/20 transition-all rounded-2xl px-4 py-3 flex items-center gap-3 cursor-pointer">
+            <span class="text-xl">🧾</span><span class="font-semibold">Tạo giao dịch</span>
+          </div>
+        </a>
+        <a href="AI_Advisor.html" class="menu-link">
+          <div class="w-full bg-white/10 hover:bg-white/20 transition-all rounded-2xl px-4 py-3 flex items-center gap-3 cursor-pointer">
+            <span class="text-xl">🤖</span><span class="font-semibold">AI Advisor</span>
+          </div>
+        </a>
+      </nav>
+      <div class="mt-4 pt-4 border-t border-white/20">
+        <div class="flex items-center gap-3 mb-3 px-2">
+          <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-sm">👤</div>
+          <p id="userEmail" class="text-xs text-emerald-100 truncate flex-1">...</p>
+        </div>
+        <button onclick="doLogout()" class="w-full bg-red-500/80 hover:bg-red-500 transition-all text-white rounded-xl px-4 py-2.5 text-sm font-bold flex items-center justify-center gap-2">
+          🚪 Đăng xuất
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- WORKSPACE TOGGLE -->
+  <div id="wsToggle" class="ws-toggle" onclick="toggleWS()">💼</div>
+  <div id="wsPopup" class="ws-popup hidden">
+    <div class="ws-header">
+      <h3>Workspace</h3>
+      <span onclick="toggleWS()" style="cursor:pointer;">✖</span>
+    </div>
+    <div id="wsList" class="ws-list"></div>
+    <!-- Invite code box dành cho admin, ẩn mặc định -->
+    <div id="inviteCodeBox" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:14px;padding:12px 14px;margin-top:8px;">
+      <p style="font-size:11px;font-weight:700;color:#065f46;margin-bottom:6px;">🔑 Mã mời tham gia workspace</p>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <code id="inviteCodeDisplay" style="flex:1;background:white;border:1px solid #86efac;border-radius:8px;padding:6px 10px;font-size:14px;font-weight:800;color:#059669;letter-spacing:2px;"></code>
+        <button onclick="copyInviteCode()" style="background:#059669;color:white;border:none;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Be Vietnam Pro',sans-serif;">Sao chép</button>
+      </div>
+    </div>
+    <button onclick="goCreate()" class="ws-add">+ Tạo workspace mới</button>
+  </div>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1 id="dashTitle">📊 Dashboard</h1>
+        <p>Theo dõi dòng tiền và kiểm soát chi tiêu realtime cùng AI.</p>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <div id="budgetAlert" class="alert" style="display:none;"></div>
+        <button onclick="openIncomeModal()" class="btn-green" style="padding:12px 20px;border-radius:14px;font-size:14px;">+ Thêm thu</button>
+      </div>
+    </div>
+
+    <!-- CARDS -->
+    <div class="cards">
+      <div class="card">
+        <div class="card-top"><div class="card-title">Tổng thu</div><div class="card-icon">💰</div></div>
+        <h2 id="totalIncome">0đ</h2>
+        <div class="positive" id="incomeCount">0 khoản thu</div>
+      </div>
+      <div class="card">
+        <div class="card-top"><div class="card-title">Tổng chi</div><div class="card-icon">💸</div></div>
+        <h2 id="totalExpense">0đ</h2>
+        <div class="negative" id="expenseCount">0 khoản chi</div>
+      </div>
+      <div class="card">
+        <div class="card-top"><div class="card-title">Số dư hiện tại</div><div class="card-icon">🏦</div></div>
+        <h2 id="balance">0đ</h2>
+        <div class="positive" id="balanceStatus">Dòng tiền ổn định</div>
+      </div>
+      <div class="card">
+        <div class="card-top"><div class="card-title">Pending approvals</div><div class="card-icon">⏳</div></div>
+        <h2 id="pendingCount">0</h2>
+        <div class="negative" id="pendingLabel">Cần phê duyệt</div>
+      </div>
+    </div>
+
+    <!-- GRID -->
+    <div class="grid">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Chi tiêu theo danh mục</h3>
+          <div class="badge">Realtime</div>
+        </div>
+        <canvas id="expenseChart" height="130"></canvas>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <h3>AI Summary</h3>
+          <div class="badge">AI Insight</div>
+        </div>
+        <div id="aiInsights">
+          <div class="ai-box">
+            <h4>🤖 Đang phân tích...</h4>
+            <p>AI đang tải dữ liệu workspace của bạn.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRID 2 -->
+    <div class="grid">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Giao dịch gần đây</h3>
+          <div class="badge" id="txBadge">0 giao dịch</div>
+        </div>
+        <div id="transactionList"><p style="color:#94a3b8;text-align:center;padding:20px;">Chưa có giao dịch nào.</p></div>
+      </div>
+
+      <div class="panel" id="approvalPanel">
+        <div class="panel-header">
+          <h3>Pending Approvals</h3>
+          <div class="badge" id="approvalBadge">0 requests</div>
+        </div>
+        <div id="approvalList"><p style="color:#94a3b8;text-align:center;padding:20px;">Không có yêu cầu nào.</p></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, collection, query, where, getDocs, addDoc, updateDoc, doc, getDoc, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA81clB1PVQ2xxvjwqIVf8nCM_g4P76N-g",
+  authDomain: "finmate-trolytaichinh.firebaseapp.com",
+  projectId: "finmate-trolytaichinh",
+  storageBucket: "finmate-trolytaichinh.firebasestorage.app",
+  messagingSenderId: "54653241549",
+  appId: "1:54653241549:web:e62a60ad34c1e53326c184",
+  measurementId: "G-VMPRFZVF6C"
+};
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  let chartInstance = null;
+  let currentUser = null;
+  let currentWsId = null;
+  let isAdmin = false; // true nếu user là người tạo workspace
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast ${type} show`;
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  function fmt(n) {
+    return Number(n).toLocaleString('vi-VN') + 'đ';
+  }
+
+  // ─── AUTH GUARD ───
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) { window.location.href = 'finmate.html'; return; }
+    currentUser = user;
+    document.getElementById('userEmail').textContent = user.displayName || user.email;
+
+    currentWsId = localStorage.getItem('finmate_currentWs');
+
+    // Nếu không có workspace trong localStorage → thử tải từ Firestore
+    if (!currentWsId) {
+      try {
+        const q = query(collection(db, 'workspaces'), where('members', 'array-contains', user.uid));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const wsDoc = snap.docs[0];
+          const wsData = wsDoc.data();
+          currentWsId = wsDoc.id;
+          const wsObj = { id: wsDoc.id, name: wsData.name, type: wsData.type, inviteCode: wsData.inviteCode || '' };
+          localStorage.setItem('finmate_currentWs', wsDoc.id);
+          localStorage.setItem('finmate_currentWsName', wsData.name);
+          const list = snap.docs.map(d => ({ id: d.id, name: d.data().name, type: d.data().type, inviteCode: d.data().inviteCode || '', createdBy: d.data().createdBy || '' }));
+          localStorage.setItem('finmate_workspaces', JSON.stringify(list));
+        } else {
+          // Thực sự chưa có workspace
+          window.location.href = 'finmate.html';
+          return;
+        }
+      } catch (e) {
+        window.location.href = 'finmate.html';
+        return;
+      }
+    }
+
+    const wsName = localStorage.getItem('finmate_currentWsName') || 'Dashboard';
+    document.getElementById('dashTitle').textContent = '📊 ' + wsName;
+
+    await loadDashboard();
+    loadWorkspaceList();
+    document.getElementById('loadingOverlay').style.display = 'none';
+  });
+
+  // ─── LOAD DASHBOARD ───
+  async function loadDashboard() {
+    try {
+      // Load incomes
+      const incSnap = await getDocs(query(collection(db, 'incomes'), where('workspaceId', '==', currentWsId)));
+      let totalIncome = 0;
+      incSnap.forEach(d => { totalIncome += Number(d.data().amount || 0); });
+      document.getElementById('totalIncome').textContent = fmt(totalIncome);
+      document.getElementById('incomeCount').textContent = incSnap.size + ' khoản thu';
+
+      // Load expenses
+      const expSnap = await getDocs(query(collection(db, 'expenses'), where('workspaceId', '==', currentWsId)));
+      let totalExpense = 0;
+      const catMap = {};
+      const txItems = [];
+      let pendingCount = 0;
+      expSnap.forEach(d => {
+        const data = d.data();
+        if (data.status === 'APPROVED') { totalExpense += Number(data.amount || 0); }
+        if (data.status === 'PENDING') pendingCount++;
+        const cat = data.category || 'Khác';
+        catMap[cat] = (catMap[cat] || 0) + Number(data.amount || 0);
+        txItems.push({ id: d.id, ...data });
+      });
+      document.getElementById('totalExpense').textContent = fmt(totalExpense);
+      document.getElementById('expenseCount').textContent = expSnap.size + ' khoản chi';
+      document.getElementById('pendingCount').textContent = pendingCount;
+      document.getElementById('pendingLabel').textContent = pendingCount > 0 ? 'Cần phê duyệt hôm nay' : 'Không có yêu cầu mới';
+      document.getElementById('approvalBadge').textContent = pendingCount + ' requests';
+
+      const balance = totalIncome - totalExpense;
+      document.getElementById('balance').textContent = fmt(balance);
+      document.getElementById('balanceStatus').textContent = balance >= 0 ? '✅ Dòng tiền ổn định' : '⚠️ Âm quỹ';
+      document.getElementById('balanceStatus').className = balance >= 0 ? 'positive' : 'negative';
+
+      // Budget alert + AI insights
+      let budgetTotalForAI = 0;
+      const wsDoc = await getDoc(doc(db, 'workspaces', currentWsId));
+      if (wsDoc.exists()) {
+        const wsd = wsDoc.data();
+        budgetTotalForAI = wsd.budget || 0;
+        // Xác định admin
+        isAdmin = (wsd.createdBy === currentUser.uid);
+        // Sync inviteCode & createdBy vào localStorage để popup hiện đúng
+        const list = JSON.parse(localStorage.getItem('finmate_workspaces') || '[]');
+        const idx = list.findIndex(w => w.id === currentWsId);
+        if (idx >= 0) {
+          list[idx].inviteCode = wsd.inviteCode || list[idx].inviteCode || '';
+          list[idx].createdBy = wsd.createdBy || '';
+          localStorage.setItem('finmate_workspaces', JSON.stringify(list));
+        }
+        // Hiện/ẩn panel Pending Approvals
+        const approvalPanel = document.getElementById('approvalPanel');
+        if (approvalPanel) approvalPanel.style.display = isAdmin ? '' : 'none';
+        const warnThreshold = (wsd.warnThreshold || 80) / 100;
+        if (budgetTotalForAI > 0 && totalExpense / budgetTotalForAI >= warnThreshold) {
+          const pct = Math.round(totalExpense / budgetTotalForAI * 100);
+          const alertEl = document.getElementById('budgetAlert');
+          alertEl.textContent = `⚠️ Đã chi ${pct}% ngân sách dự kiến`;
+          alertEl.style.display = 'block';
+        }
+      }
+
+      // Chart
+      renderChart(catMap);
+
+      // Transactions list (recent 5)
+      txItems.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      renderTransactions(txItems.slice(0, 5));
+
+      // Approvals
+      const pendingItems = txItems.filter(t => t.status === 'PENDING');
+      renderApprovals(pendingItems);
+
+      // AI insights
+      renderAIInsights(totalIncome, totalExpense, catMap, budgetTotalForAI);
+    } catch (err) {
+      console.error(err);
+      showToast('Lỗi tải dữ liệu: ' + err.message, 'error');
+    }
+  }
+
+  function renderChart(catMap) {
+    const ctx = document.getElementById('expenseChart');
+    if (!ctx) return;
+    const labels = Object.keys(catMap);
+    const data = Object.values(catMap);
+    const colors = ['#10b981','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#14b8a6','#f97316','#64748b'];
+    if (chartInstance) chartInstance.destroy();
+    chartInstance = new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels, datasets: [{ data, backgroundColor: colors.slice(0, labels.length), borderWidth: 0 }] },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16, font: { family: 'Be Vietnam Pro', size: 13 } } }
+        },
+        cutout: '65%'
+      }
+    });
+  }
+
+  function renderTransactions(items) {
+    const el = document.getElementById('transactionList');
+    document.getElementById('txBadge').textContent = items.length + ' giao dịch';
+    if (!items.length) { el.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">Chưa có giao dịch.</p>'; return; }
+    const icons = { 'Ăn uống':'🍜','Marketing':'📢','Vật tư':'📦','Team Building':'🎉','Thiết bị':'💻','Vận chuyển':'🚗','Phần mềm':'⚙️','Khác':'💡' };
+    const statusMap = { APPROVED: '<span class="status approved">Approved</span>', PENDING: '<span class="status pending">Pending</span>', REJECTED: '<span class="status" style="background:#fee2e2;color:#ef4444;">Rejected</span>' };
+    el.innerHTML = items.map(t => `
+      <div class="transaction">
+        <div class="transaction-left">
+          <div class="transaction-icon">${icons[t.category] || '💡'}</div>
+          <div><h4>${t.note || t.category || 'Giao dịch'}</h4><p>${t.vendor || t.createdAt?.substring(0,10) || ''}</p></div>
+        </div>
+        <div><h4>${fmt(t.amount)}</h4>${statusMap[t.status] || ''}</div>
+      </div>
+    `).join('');
+  }
+
+  function renderApprovals(items) {
+    const el = document.getElementById('approvalList');
+    if (!isAdmin) {
+      el.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">Chỉ admin workspace mới có thể phê duyệt.</p>';
+      return;
+    }
+    if (!items.length) { el.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">Không có yêu cầu nào.</p>'; return; }
+    el.innerHTML = items.slice(0, 3).map(t => `
+      <div class="approval-item">
+        <div class="approval-left">
+          <h4>${t.note || t.category}</h4>
+          <p>${fmt(t.amount)} • ${t.createdByName || 'Không rõ người gửi'} • ${t.date || ''}</p>
+        </div>
+        <div class="buttons">
+          <button class="btn approve" onclick="approveExpense('${t.id}', 'APPROVED')">Approve</button>
+          <button class="btn reject" onclick="approveExpense('${t.id}', 'REJECTED')">Reject</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderAIInsights(income, expense, catMap, budget) {
+    const el = document.getElementById('aiInsights');
+    const insights = [];
+    const topCat = Object.entries(catMap).sort((a,b) => b[1]-a[1])[0];
+    if (topCat) insights.push(`<div class="ai-box"><h4>📊 Danh mục chi nhiều nhất: ${topCat[0]}</h4><p>Bạn đã chi <b>${fmt(topCat[1])}</b> cho ${topCat[0]}.</p></div>`);
+    if (budget > 0) {
+      const pct = Math.round(expense / budget * 100);
+      insights.push(`<div class="ai-box"><h4>💰 Tiến độ ngân sách</h4><p>Đã sử dụng <b>${pct}%</b> ngân sách dự kiến (${fmt(expense)} / ${fmt(budget)}).</p></div>`);
+    }
+    const balance = income - expense;
+    if (balance < 0) insights.push(`<div class="ai-box"><h4>⚠️ Cảnh báo: Âm quỹ!</h4><p>Chi tiêu vượt thu nhập <b>${fmt(-balance)}</b>. Hãy kiểm soát chi tiêu ngay.</p></div>`);
+    else insights.push(`<div class="ai-box"><h4>💡 Số dư an toàn</h4><p>Quỹ hiện còn <b>${fmt(balance)}</b>. Dòng tiền đang ổn định.</p></div>`);
+    if (Object.keys(catMap).length === 0) insights.push(`<div class="ai-box"><h4>📝 Bắt đầu thêm giao dịch</h4><p>Tạo giao dịch chi đầu tiên để AI có thể phân tích dữ liệu cho bạn.</p></div>`);
+    el.innerHTML = insights.join('') || '<div class="ai-box"><h4>🤖 Chưa có dữ liệu</h4><p>Thêm thu/chi để AI phân tích.</p></div>';
+  }
+
+  // ─── APPROVE / REJECT ───
+  window.approveExpense = async function(expId, status) {
+    if (!isAdmin) { showToast('Chỉ admin workspace mới được phê duyệt!', 'error'); return; }
+    try {
+      await updateDoc(doc(db, 'expenses', expId), { status, updatedAt: new Date().toISOString() });
+      showToast(status === 'APPROVED' ? 'Đã phê duyệt giao dịch ✅' : 'Đã từ chối giao dịch');
+      await loadDashboard();
+    } catch (err) {
+      showToast('Lỗi: ' + err.message, 'error');
+    }
+  };
+
+  // ─── INCOME MODAL ───
+  window.openIncomeModal = function() { document.getElementById('incomeModal').classList.add('open'); document.getElementById('inc-date').value = new Date().toISOString().split('T')[0]; };
+  window.closeIncomeModal = function() { document.getElementById('incomeModal').classList.remove('open'); };
+  window.saveIncome = async function() {
+    const amount = parseFloat(document.getElementById('inc-amount').value);
+    const source = document.getElementById('inc-source').value.trim();
+    const note = document.getElementById('inc-note').value.trim();
+    const date = document.getElementById('inc-date').value;
+    if (!amount || amount <= 0) { showToast('Vui lòng nhập số tiền hợp lệ.', 'error'); return; }
+    if (!source) { showToast('Vui lòng nhập nguồn thu.', 'error'); return; }
+    const btn = document.getElementById('saveIncBtn');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Đang lưu...';
+    try {
+      await addDoc(collection(db, 'incomes'), {
+        workspaceId: currentWsId, amount, source, note, date,
+        createdBy: currentUser.uid, createdAt: new Date().toISOString()
+      });
+      showToast('Đã thêm khoản thu! 💰');
+      closeIncomeModal();
+      await loadDashboard();
+    } catch (err) { showToast('Lỗi: ' + err.message, 'error'); }
+    finally { btn.disabled = false; btn.innerHTML = 'Lưu khoản thu'; }
+  };
+
+  // ─── WORKSPACE POPUP ───
+  window.toggleWS = function() { document.getElementById('wsPopup').classList.toggle('hidden'); };
+  window.goCreate = function() { window.location.href = 'index.html?step=2'; };
+  window.switchWorkspace = function(id, name) {
+    localStorage.setItem('finmate_currentWs', id);
+    localStorage.setItem('finmate_currentWsName', name);
+    location.reload();
+  };
+
+  function loadWorkspaceList() {
+    const list = JSON.parse(localStorage.getItem('finmate_workspaces') || '[]');
+    const el = document.getElementById('wsList');
+    if (!list.length) { el.innerHTML = '<p style="color:#94a3b8;font-size:13px;padding:8px;">Chưa có workspace</p>'; return; }
+
+    el.innerHTML = list.map(ws => {
+      const isActive = ws.id === currentWsId;
+      const isMine = ws.createdBy === currentUser.uid;
+      const roleBadge = isMine
+        ? `<span style="font-size:10px;font-weight:700;background:#dcfce7;color:#059669;padding:2px 7px;border-radius:6px;">👑 Admin</span>`
+        : `<span style="font-size:10px;font-weight:700;background:#e0f2fe;color:#0369a1;padding:2px 7px;border-radius:6px;">👥 Thành viên</span>`;
+      return `
+        <div onclick="switchWorkspace('${ws.id}','${ws.name}')"
+          style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:12px;cursor:pointer;margin-bottom:4px;
+          ${isActive ? 'background:#d1fae5;border:1.5px solid #6ee7b7;' : 'background:#f8fafc;border:1.5px solid transparent;'}transition:background 0.15s;">
+          <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+            <span style="font-weight:${isActive?'800':'600'};font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">💼 ${ws.name}</span>
+            <div>${roleBadge}</div>
+          </div>
+          ${isActive ? '<span style="color:#059669;font-weight:700;font-size:12px;">✓ Đang dùng</span>' : ''}
+        </div>`;
+    }).join('');
+
+    // Hiện invite code nếu ws hiện tại là của mình
+    const activeWs = list.find(w => w.id === currentWsId);
+    const inviteBox = document.getElementById('inviteCodeBox');
+    const inviteDisp = document.getElementById('inviteCodeDisplay');
+    if (activeWs && activeWs.createdBy === currentUser.uid && activeWs.inviteCode) {
+      inviteDisp.textContent = activeWs.inviteCode;
+      inviteBox.style.display = 'block';
+    } else {
+      inviteBox.style.display = 'none';
+    }
+  }
+
+  window.copyInviteCode = function() {
+    const code = document.getElementById('inviteCodeDisplay').textContent;
+    navigator.clipboard.writeText(code).then(() => showToast('Đã sao chép mã mời! 📋')).catch(() => showToast('Không thể sao chép', 'error'));
+  };
+
+  // ─── LOGOUT ───
+  window.doLogout = async function() {
+    await signOut(auth);
+    localStorage.removeItem('finmate_currentWs');
+    localStorage.removeItem('finmate_currentWsName');
+    window.location.href = 'finmate.html';
+  };
+</script>
+</body>
+</html>
